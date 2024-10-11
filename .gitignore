@@ -1,0 +1,5 @@
+# Cocotb virtual env
+venv_cocotb/
+
+# Personal workspace
+*.code-workspace
