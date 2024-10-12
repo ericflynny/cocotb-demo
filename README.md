@@ -1,3 +1,6 @@
+# THIS PROJECT IS CURRENTLY A WORK IN PROGRESS. The cocotb/ghdl functionality has not been implemented
+
+
 ## Setting Up the Python Virtual Environment
 In order to run the cocotb software, one must first configure the appropriate python virtual environment (venv). 
 
