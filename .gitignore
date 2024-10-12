@@ -3,3 +3,9 @@ venv_cocotb/
 
 # Personal workspace
 *.code-workspace
+
+# Build files
+*.cf
+
+# Python files
+*/__pycache__
