@@ -3,7 +3,7 @@ from cocotb.clock import Clock
 from cocotb.triggers import RisingEdge, FallingEdge, Timer
 
 @cocotb.test()
-def spi_test(dut):
+async def spi_test(dut):
     clock = Clock(dut.clk, 10, units="ns")  # Create a 10ns clock
     cocotb.start_soon(clock.start())
 

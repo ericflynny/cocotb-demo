@@ -2,7 +2,6 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
-
 entity spi_master is
   generic (
     CLK_FREQ    : integer := 50_000_000;  -- System clock frequency in Hz
@@ -18,7 +17,8 @@ entity spi_master is
     miso    : in  std_logic;              -- Master In Slave Out
     tx_data : in  std_logic_vector(DATA_WIDTH-1 downto 0); -- Data to transmit
     rx_data : out std_logic_vector(DATA_WIDTH-1 downto 0); -- Received data
-    done    : out std_logic               -- Transaction complete
+    done    : out std_logic;              -- Transaction complete
+    sclk    : out std_logic               -- SPI clock output <--- Add this line
   );
 end entity spi_master;
 
