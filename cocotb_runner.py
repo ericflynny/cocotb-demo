@@ -3,12 +3,17 @@ import pytest
 import cocotb.runner
 
 class Cocotb_Runner():
+
     def __init__(self):
         self.test_groups: list[str] = ["spi"]
         self.ghdl = cocotb.runner.Ghdl()
+        # Top level file must be first for build
+        self.Source_Files = {
+            "spi": ["spi_top_level.vhd", "spi_slave.vhd", "spi_master.vhd"]
+        }
 
     @staticmethod
-    def find_test_files(directory):
+    def find_test_files(directory: str):
         """Finds all files starting with 'test_' in the given directory and its subdirectories."""
         test_files = []
         for root, _, files in os.walk(directory):
@@ -18,7 +23,7 @@ class Cocotb_Runner():
         return test_files
 
     @staticmethod
-    def find_cocotb_tests(file_path):
+    def find_cocotb_tests(file_path: str):
         """Finds functions decorated with @cocotb.test() in the given Python file."""
         tests = []
         with open(file_path, "r") as f:
@@ -34,7 +39,7 @@ class Cocotb_Runner():
                                 tests.append(function_name)
                                 break
                         except StopIteration:
-                            # Reached end of file without finding "async def"
+                        # Reached end of file without finding "async def"
                             break
         return tests
     
@@ -43,7 +48,7 @@ class Cocotb_Runner():
         for i, group in enumerate(self.test_groups):
                 print(f"{i+1}: {group}")
 
-    def get_user_choice(self, prompt, options, allow_all=False, add_q_to_quit=True):
+    def get_user_choice(self, prompt: str, options: list, allow_all=False, add_q_to_quit=True):
         """Gets user choice with input validation and handling for 'q', 'all', and 'b'.
 
         Args:
@@ -75,6 +80,35 @@ class Cocotb_Runner():
             except ValueError:
                 print("Invalid input. Please enter a valid number.")
 
+    def run_tests(self, group: str, test_module: str, selected_testcases: list[str]):
+        try:
+            self.ghdl.test(test_module=test_module,
+                            testcase=selected_testcases,
+                            hdl_toplevel=self.Source_Files[group][0],
+                            waves=True,
+                            gui=False)
+        except Exception as e:
+            print(f"Unable to run tests: {e}")
+
+    def build(self, group: str):        
+        cwd = os.getcwd()
+
+        os.chdir(os.path.join(cwd, "vhdl", group))
+
+        try:
+            self.ghdl.build(vhdl_sources=self.Source_Files[group],
+                            # hdl_toplevel=self.Source_Files[group][0],
+                            build_dir=(os.path.join("vhdl", group)),
+                            # build_args=["-a"],
+                            clean=True,
+                            log_file=f"{group}.log")
+        except Exception as e:
+            print(f"Unable to build {group}: {e}")
+
+        print(f"Successfully built {group}\n")
+
+        os.chdir(cwd)
+
     def main(self):
         """Main function to search for test files and cocotb tests."""
         current_dir = os.getcwd()
@@ -87,8 +121,8 @@ class Cocotb_Runner():
             if group_choice == 'q':
                 exit(code=0)
             elif isinstance(group_choice, int):
-                test_group_dir = os.path.join(current_dir, self.test_groups[group_choice])
-                test_group_dir_name = os.path.basename(test_group_dir)
+                test_group_dir = os.path.join(current_dir, "tests", self.test_groups[group_choice])
+                test_group_name = os.path.basename(test_group_dir)
                 if os.path.exists(test_group_dir):
                     test_files = self.find_test_files(test_group_dir)
                     if test_files:
@@ -96,7 +130,7 @@ class Cocotb_Runner():
                         if tests_available:
                             # Selecting test suite
                             while True:  # Inner loop for test suite and test selection
-                                print(f"\nTest suites in {test_group_dir_name}:")
+                                print(f"\nTest suites in {test_group_name}:")
                                 for i, file in enumerate(test_files):
                                     file_name = os.path.basename(file)
                                     file_name = file_name.replace("test_", "").replace(".py", "")
@@ -137,14 +171,19 @@ class Cocotb_Runner():
                                         elif isinstance(test_choice, int):
                                             selected_test = cocotb_tests[test_choice]
                                             print(f"Running test: {selected_test}")
-                                            # TODO: Add logic to run the selected test
+                                            # Build files
+                                            self.build(test_group_name)
+
+                                            # Run the selected test(s)
+                                            # self.run_tests(group=test_group_name, test_module=selected_file_name, selected_testcases=selected_test)
+
                                             break
                                         else:
                                             print("Invalid input. Please enter a valid number.")
                                 else:
                                     print("Invalid input. Please enter a valid number.")
                         else:
-                            print(f"\nNO TESTS FOUND IN: {test_group_dir_name}")
+                            print(f"\nNO TESTS FOUND IN: {test_group_name}")
                     else:
                         print(f"No test suites found in {test_group_dir}.")
                 else:

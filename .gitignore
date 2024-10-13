@@ -5,6 +5,7 @@ venv_cocotb/
 *.code-workspace
 
 # Build files
+*.log
 *.cf
 
 # Python files
