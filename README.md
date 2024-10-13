@@ -1,7 +1,7 @@
 # This project is currently a work in progress (10.13.24). The cocotb tests and hdl have not been reviewed but the framework is functional
 
 
-## Setting Up the Python Virtual Environment
+## Setting Up the python virtual environment
 In order to run the cocotb software, one must first configure the appropriate python virtual environment (venv). 
 
 ### Windows:
@@ -21,6 +21,16 @@ In order to run the cocotb software, one must first configure the appropriate py
 5. Run `python -m pip install --upgrade pip` to upgrade to the latest pip
 6. Run `python -m pip install -r requirements.txt` to install all requirements
 7. The venv is now active. To exit, either close the terminal or run `deactivate`. To re-activate, run `source venv_cocotb/bin/activate` from the directory of this README.
+
+
+## Setting up ghdl
+- If on Windows, install executable from here: http://ghdl.free.fr/download.html
+- If on Mac (with homebrew installed), run `brew install ghdl`
+- If on Debian/Ubuntu, run `sudo apt-get install ghdl`
+- If on Fedora/CentOS, run `sudo yum install ghdl`
+- If on Arch Linux, run `sudo pacman -S ghdl`
+
+NOTE: Run `ghdl --version` to verify successfull installation
 
 
 ## Running tests
