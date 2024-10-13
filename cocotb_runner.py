@@ -93,7 +93,9 @@ class Cocotb_Runner():
                             testcase=selected_testcases,
                             hdl_toplevel=self.Source_Files[group][0].replace(".vhd", ""),  # Remove .vhd extension
                             waves=True,
-                            gui=False)
+                            gui=False,
+                            plusargs=[f"--wave={group}_wave.ghw"]
+                            )
         except Exception as e:
             print(f"Unable to run tests: {e}")
 

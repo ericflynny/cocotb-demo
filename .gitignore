@@ -4,10 +4,11 @@ venv_cocotb/
 # Personal workspace
 *.code-workspace
 
-# Build files
+# Build/Sim/Wave files
 *.log
 *.cf
 *.xml
+*ghw
 
 # Python files
 */__pycache__

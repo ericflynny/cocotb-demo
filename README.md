@@ -32,6 +32,7 @@ In order to run the cocotb software, one must first configure the appropriate py
 
 NOTE: Run `ghdl --version` to verify successfull installation
 
+# TODO: Add gtkwave install instructions
 
 ## Running tests
 With the virtual environment active and Questa installed with a license setup, one can now run the software.
