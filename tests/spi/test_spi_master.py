@@ -15,4 +15,3 @@ async def spi_test(dut):
     test_data = 0x5A 
 
     # Select slave 1 (modify for slave 2)
-    dut.
