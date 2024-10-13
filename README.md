@@ -1,4 +1,4 @@
-# THIS PROJECT IS CURRENTLY A WORK IN PROGRESS. The cocotb/ghdl functionality has not been implemented
+# This project is currently a work in progress (10.13.24). The cocotb tests and hdl have not been reviewed but the framework is functional
 
 
 ## Setting Up the Python Virtual Environment
