@@ -1,101 +1,88 @@
--- spi_master.vhdl
-library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.NUMERIC_STD.ALL;
+
 entity spi_master is
-  generic (
-    CLK_FREQ    : integer := 50_000_000;  -- System clock frequency in Hz
-    SCLK_FREQ   : integer := 1_000_000;   -- SPI clock frequency in Hz
-    DATA_WIDTH : integer := 8             -- SPI data width in bits
-  );
-  port (
-    clk     : in  std_logic;
-    reset   : in  std_logic;
-    start   : in  std_logic;              -- Start SPI transaction
-    ss      : out std_logic_vector(1 downto 0); -- Slave select (active low)
-    mosi    : out std_logic;              -- Master Out Slave In
-    miso    : in  std_logic;              -- Master In Slave Out
-    tx_data : in  std_logic_vector(DATA_WIDTH-1 downto 0); -- Data to transmit
-    rx_data : out std_logic_vector(DATA_WIDTH-1 downto 0); -- Received data
-    done    : out std_logic;              -- Transaction complete
-    sclk    : out std_logic               -- SPI clock output <--- Add this line
-  );
-end entity spi_master;
+    generic (
+        CLK_DIV : integer := 4;  -- System clock divider to generate SCLK
+        DATA_WIDTH : integer := 8 -- Data width in bits
+    );
+    port (
+        clk          : in  std_logic;
+        rst          : in  std_logic;
+        -- Control signals
+        start_tx     : in  std_logic;
+        busy         : out std_logic;
+        -- Data signals
+        data_in      : in  std_logic_vector(DATA_WIDTH-1 downto 0);
+        data_out     : out std_logic_vector(DATA_WIDTH-1 downto 0);
+        -- SPI signals
+        sclk         : out std_logic;
+        mosi         : out std_logic;
+        miso         : in  std_logic;
+        cs_n         : out std_logic
+    );
+end spi_master;
 
-architecture behavioral of spi_master is
-
-  type state_type is (IDLE, START_TRANSFER, SHIFT_DATA, STOP_TRANSFER);
-  signal current_state : state_type := IDLE;
-
-  signal sclk_counter : integer range 0 to CLK_FREQ/SCLK_FREQ/2-1 := 0;
-  signal sclk_internal : std_logic := '0';
-  signal bit_counter : integer range 0 to DATA_WIDTH-1 := 0;
-  signal tx_reg : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
-  signal rx_reg : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
-
+architecture Behavioral of spi_master is
+    type state_type is (IDLE, TRANSFER);
+    signal state : state_type;
+    
+    signal bit_counter : integer range 0 to DATA_WIDTH-1;
+    signal clk_counter : integer range 0 to CLK_DIV-1;
+    signal shift_reg   : std_logic_vector(DATA_WIDTH-1 downto 0);
+    signal sclk_int    : std_logic;
+    signal active      : std_logic;
 begin
+    process(clk, rst)
+    begin
+        if rst = '1' then
+            state <= IDLE;
+            bit_counter <= DATA_WIDTH-1;
+            clk_counter <= 0;
+            shift_reg <= (others => '0');
+            sclk_int <= '0';
+            active <= '0';
+            cs_n <= '1';
+            busy <= '0';
+            
+        elsif rising_edge(clk) then
+            case state is
+                when IDLE =>
+                    if start_tx = '1' then
+                        state <= TRANSFER;
+                        shift_reg <= data_in;
+                        active <= '1';
+                        cs_n <= '0';
+                        busy <= '1';
+                    end if;
+                    
+                when TRANSFER =>
+                    if clk_counter = CLK_DIV-1 then
+                        clk_counter <= 0;
+                        sclk_int <= not sclk_int;
+                        
+                        if sclk_int = '1' then  -- Sample MISO on rising edge
+                            shift_reg <= shift_reg(DATA_WIDTH-2 downto 0) & miso;
+                        end if;
+                        
+                        if sclk_int = '0' and bit_counter = 0 then  -- End of transfer
+                            state <= IDLE;
+                            active <= '0';
+                            cs_n <= '1';
+                            busy <= '0';
+                            data_out <= shift_reg;
+                            bit_counter <= DATA_WIDTH-1;
+                        elsif sclk_int = '0' then
+                            bit_counter <= bit_counter - 1;
+                        end if;
+                    else
+                        clk_counter <= clk_counter + 1;
+                    end if;
+            end case;
+        end if;
+    end process;
 
-  -- Generate SPI clock
-  process(clk)
-  begin
-    if rising_edge(clk) then
-      if sclk_counter = CLK_FREQ/SCLK_FREQ/2-1 then
-        sclk_counter <= 0;
-        sclk_internal <= not sclk_internal;
-      else
-        sclk_counter <= sclk_counter + 1;
-      end if;
-    end if;
-  end process;
-
-  -- SPI state machine
-  process(clk)
-  begin
-    if rising_edge(clk) then
-      if reset = '1' then
-        current_state <= IDLE;
-        bit_counter <= 0;
-        ss <= (others => '1');  -- Deselect all slaves
-        done <= '0';
-      else
-        case current_state is
-          when IDLE =>
-            if start = '1' then
-              current_state <= START_TRANSFER;
-              tx_reg <= tx_data;
-              bit_counter <= 0;
-              done <= '0';
-            end if;
-
-          when START_TRANSFER =>
-            ss <= "01";  -- Select slave 1 (modify for different slave)
-            current_state <= SHIFT_DATA;
-
-          when SHIFT_DATA =>
-            if sclk_internal = '1' then  -- Capture data on rising edge
-              rx_reg(bit_counter) <= miso;
-            end if;
-            if sclk_internal = '0' then  -- Shift data on falling edge
-              mosi <= tx_reg(DATA_WIDTH-1 - bit_counter); 
-              if bit_counter = DATA_WIDTH-1 then
-                current_state <= STOP_TRANSFER;
-              else
-                bit_counter <= bit_counter + 1;
-              end if;
-            end if;
-
-          when STOP_TRANSFER =>
-            ss <= (others => '1');  -- Deselect slaves
-            rx_data <= rx_reg;
-            done <= '1';
-            current_state <= IDLE;
-
-        end case;
-      end if;
-    end if;
-  end process;
-
-  -- Output SPI clock
-  sclk <= sclk_internal;
-
-end architecture behavioral;
+    sclk <= sclk_int when active = '1' else '0';
+    mosi <= shift_reg(DATA_WIDTH-1) when active = '1' else '0';
+end Behavioral;

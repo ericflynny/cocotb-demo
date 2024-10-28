@@ -6,7 +6,7 @@ from testbench_spi import SPI_Testbench
 
 @cocotb.test()
 async def spi_test(dut):
-    Spi = SPI_Testbench.SPI_Testbench(dut)
+    Spi = SPI_Testbench(dut)
     await Spi.reset()
 
 

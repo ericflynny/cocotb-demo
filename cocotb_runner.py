@@ -3,23 +3,30 @@ import pytest
 import cocotb.runner
 
 class Cocotb_Runner():
-
     def __init__(self):
-        self.test_groups: list[str] = ["spi"]
         self.ghdl = cocotb.runner.Ghdl()
         # Top level file must be first for build
+        cwd = os.getcwd()
+        # Dictionary format -> Testbench name: (List of source files, Top level entity name)
         self.Source_Files = {
-            "spi": ["spi_top_level.vhd", "spi_slave.vhd", "spi_master.vhd"]
+            # Testbench name
+            "spi":  (
+                    # Source files
+                    [f"{os.path.join(cwd, 'vhdl', 'spi', 'spi_slave.vhd')}",
+                    f"{os.path.join(cwd, 'vhdl', 'spi', 'spi_master.vhd')}",
+                    f"{os.path.join(cwd, 'vhdl', 'spi', 'spi_top_level.vhd')}"
+                    ],
+                    # Top level entity name
+                    "spi_top_level")
         }
-        os.environ["COCOTB_PDB_ON_EXCEPTION"] = "1"
 
     @staticmethod
     def find_test_files(directory: str):
-        """Finds all files starting with 'test_' in the given directory and its subdirectories."""
+        """Finds all python files starting with 'test_' in the given directory and its subdirectories."""
         test_files = []
         for root, _, files in os.walk(directory):
             for file in files:
-                if file.startswith("test_") and file.endswith((".py", ".vhd")):
+                if file.startswith("test_") and file.endswith(".py"):
                     test_files.append(os.path.join(root, file))
         return test_files
 
@@ -44,10 +51,10 @@ class Cocotb_Runner():
                             break
         return tests
     
-    def print_available_test_groups(self):
-        print("\nTest groups:")
-        for i, group in enumerate(self.test_groups):
-                print(f"{i+1}: {group}")
+    def print_available_testbenches(self):
+        print("\nTestbenches:")
+        for index, testgroup in enumerate(self.Source_Files.keys()):
+            print(f"{index+1}: {testgroup}")
 
     def get_user_choice(self, prompt: str, options: list, allow_all=False, allow_back=False):
         """Gets user choice with input validation and handling for 'q', 'all', and 'b'.
@@ -83,60 +90,54 @@ class Cocotb_Runner():
                 print("Invalid input. Please enter a number.")
 
 
-    def run_tests(self, group: str, test_module: str, selected_testcases: list[str]):
-        cwd = os.getcwd()
-
-        os.chdir(os.path.join(cwd, "vhdl", group))
+    def run_tests(self, group: str, test_module: str, selected_testcases: list[str], top_level: str):
+        testcase_string = " ".join(selected_testcases)
 
         try:
             self.ghdl.test(test_module=f"tests.{group}.test_{test_module}",
-                            testcase=selected_testcases,
-                            hdl_toplevel=self.Source_Files[group][0].replace(".vhd", ""),  # Remove .vhd extension
+                            testcase=testcase_string,
+                            hdl_toplevel=self.Source_Files[group][1],
                             waves=True,
                             gui=False,
-                            plusargs=[f"--wave={group}_wave.ghw"]
+                            plusargs=[f"--wave={group}_wave.ghw"],
+                            build_dir=f"{group}_build",
+                            log_file=f"{group}_test.log"
                             )
         except Exception as e:
             print(f"Unable to run tests: {e}")
 
-        os.chdir(cwd)
-
     def build(self, group: str):
-        cwd = os.getcwd()
-
-        os.chdir(os.path.join(cwd, "vhdl", group))
-
         try:
-            self.ghdl.build(vhdl_sources=self.Source_Files[group],
-                            hdl_toplevel=self.Source_Files[group][0].replace(".vhd", ""),  # Remove .vhd extension
+            self.ghdl.build(vhdl_sources=self.Source_Files[group][0],
+                            hdl_toplevel=self.Source_Files[group][1],
+                            build_dir=f"{group}_build",
                             clean=True,
-                            log_file=f"{group}.log")
+                            log_file=f"{group}_build.log")
         except Exception as e:
             print(f"Unable to build {group}: {e}")
 
         print(f"Successfully built {group}\n")
-
-        os.chdir(cwd)
 
     def main(self):
         """Main function to search for test files and cocotb tests."""
         current_dir = os.getcwd()
 
         while True:
-            self.print_available_test_groups()
-            group_choice = self.get_user_choice("Select a test group", self.test_groups)
+            self.print_available_testbenches()
+            group_choice = self.get_user_choice("Select a testbench (q to quit)", self.Source_Files.keys())
             if group_choice == 'q':
                 exit(code=0)
             elif isinstance(group_choice, int):
-                test_group_dir = os.path.join(current_dir, "tests", self.test_groups[group_choice])
-                test_group_name = os.path.basename(test_group_dir)
-                if os.path.exists(test_group_dir):
-                    test_files = self.find_test_files(test_group_dir)
+                testbench_name = list(self.Source_Files.keys())[group_choice]
+                testbench_path = os.path.join(current_dir, f"testbench_{testbench_name}.py")
+                if os.path.exists(testbench_path): 
+                    test_files_dir = os.path.join(current_dir, "tests", testbench_name)
+                    test_files = self.find_test_files(test_files_dir)
                     if test_files:
                         tests_available = any(self.find_cocotb_tests(file) for file in test_files)
                         if tests_available:
                             while True:
-                                print(f"\nTest suites in {test_group_name}:")
+                                print(f"\nTest suites in {testbench_name}:")
                                 for i, file in enumerate(test_files):
                                     file_name = os.path.basename(file).replace("test_", "").replace(".py", "")
                                     cocotb_tests = self.find_cocotb_tests(file)
@@ -151,14 +152,14 @@ class Cocotb_Runner():
                                     break 
                                 elif isinstance(suite_choice, int):
                                     selected_file = test_files[suite_choice]
-                                    selected_file_name = os.path.basename(selected_file).replace("test_", "").replace(".py", "")
+                                    selected_test_file_name = os.path.basename(selected_file).replace("test_", "").replace(".py", "")
                                     cocotb_tests = self.find_cocotb_tests(selected_file)
 
                                     while True:
                                         if not cocotb_tests:
-                                            print(f"No tests found in {selected_file_name}.")
+                                            print(f"No tests found in {selected_test_file_name}.")
                                             break
-                                        print(f"\nTests in {selected_file_name}:")
+                                        print(f"\nTests in {selected_test_file_name}:")
                                         for i, test in enumerate(cocotb_tests):
                                             print(f"{i+1}. {test}")
                                         test_choice = self.get_user_choice("Select a test (a for all, b for back)",
@@ -168,26 +169,27 @@ class Cocotb_Runner():
                                         elif test_choice == 'b':
                                             break
                                         elif test_choice == 'a':
-                                            print(f"Running all tests in {selected_file_name}...")
-                                            self.build(test_group_name)
-                                            self.run_tests(group=test_group_name, test_module=selected_file_name, selected_testcases=cocotb_tests)
+                                            print(f"Running all tests in {selected_test_file_name}...")
+                                            self.build(testbench_name)
+                                            self.run_tests(group=testbench_name, test_module=selected_test_file_name, selected_testcases=cocotb_tests, top_level=self.Source_Files[testbench_name][0][suite_choice])
+                                            print(suite_choice)
                                             break
                                         elif isinstance(test_choice, int):
-                                            selected_test = cocotb_tests[test_choice]
+                                            selected_test = str(cocotb_tests[test_choice])
                                             print(f"Running test: {selected_test}")
-                                            self.build(test_group_name)
-                                            self.run_tests(group=test_group_name, test_module=selected_file_name, selected_testcases=[selected_test])
+                                            self.build(testbench_name)
+                                            self.run_tests(group=testbench_name, test_module=selected_test_file_name, selected_testcases=[selected_test], top_level=self.Source_Files[testbench_name][0][suite_choice])
                                             break
                                         else:
                                             print("Invalid choice. Please enter a valid number.")
                                 else:
                                     print("Invalid choice. Please enter a valid number.")
                         else:
-                            print(f"\nNo tests found in: {test_group_name}")
+                            print(f"\nNo tests found for: {testbench_name}")
                     else:
-                        print(f"No test suites found in {test_group_dir}.")
+                        print(f"No test suites found in {test_files_dir}.")
                 else:
-                    print(f"Test group directory {test_group_dir} does not exist.")
+                    print(f"Testbench {testbench_path} does not exist. Make sure testbenches live in the same directory as this script and are titled 'testbench_<name>.")
             else:
                 print("Invalid choice. Please enter a valid number.")
 
