@@ -123,43 +123,60 @@ class Cocotb_Runner():
         current_dir = os.getcwd()
 
         while True:
+            # Prompt user to select a testbench
             self.print_available_testbenches()
-            group_choice = self.get_user_choice("Select a testbench (q to quit)", self.Source_Files.keys())
-            if group_choice == 'q':
+            testbench_choice = self.get_user_choice("Select a testbench (q to quit)", self.Source_Files.keys())
+            try:
+                testbench_name = list(self.Source_Files.keys())[testbench_choice]
+            except TypeError:
+                raise ValueError(f"Invalid choice {testbench_choice}. Please enter a valid number.")
+            
+            # Exit if desired
+            if testbench_name == 'q':
                 exit(code=0)
-            elif isinstance(group_choice, int):
-                testbench_name = list(self.Source_Files.keys())[group_choice]
+
+            else:
+                # Verify testbench exists
                 testbench_path = os.path.join(current_dir, f"testbench_{testbench_name}.py")
                 if os.path.exists(testbench_path): 
+                    # Verify test files/suites exist for corresponding testbench
                     test_files_dir = os.path.join(current_dir, "tests", testbench_name)
                     test_files = self.find_test_files(test_files_dir)
                     if test_files:
+                        # Find available tests within desired test file/suite to verify there are valid tests
                         tests_available = any(self.find_cocotb_tests(file) for file in test_files)
                         if tests_available:
                             while True:
+                                # Output available test suites
                                 print(f"\nTest suites in {testbench_name}:")
                                 for i, file in enumerate(test_files):
-                                    file_name = os.path.basename(file).replace("test_", "").replace(".py", "")
+                                    test_suite_name = os.path.basename(file).replace("test_", "").replace(".py", "")
                                     cocotb_tests = self.find_cocotb_tests(file)
                                     test_indicator = " (NO TESTS)" if not cocotb_tests else ""
-                                    print(f"{i+1}. {file_name}{test_indicator}")
+                                    print(f"{i+1}. {test_suite_name}{test_indicator}")
 
+                                # Get desired suite from user
                                 suite_choice = self.get_user_choice("Select a test suite (b for back)", 
                                                                     test_files, allow_back=True)
                                 if suite_choice == 'q':
                                     return
                                 elif suite_choice == 'b':
-                                    break 
+                                    break
+
                                 elif isinstance(suite_choice, int):
-                                    selected_file = test_files[suite_choice]
-                                    selected_test_file_name = os.path.basename(selected_file).replace("test_", "").replace(".py", "")
-                                    cocotb_tests = self.find_cocotb_tests(selected_file)
+                                    # Setup test file name for cocotb
+                                    selected_test_file = test_files[suite_choice]
+                                    selected_test_file_name_stripped = os.path.basename(selected_test_file).replace("test_", "").replace(".py", "")
+
+                                    # Find tests within test suite
+                                    cocotb_tests = self.find_cocotb_tests(selected_test_file)
 
                                     while True:
                                         if not cocotb_tests:
-                                            print(f"No tests found in {selected_test_file_name}.")
+                                            print(f"No tests found in {selected_test_file_name_stripped}.")
                                             break
-                                        print(f"\nTests in {selected_test_file_name}:")
+                                        # Prompt user to select tests to run
+                                        print(f"\nTests in {selected_test_file_name_stripped}:")
                                         for i, test in enumerate(cocotb_tests):
                                             print(f"{i+1}. {test}")
                                         test_choice = self.get_user_choice("Select a test (a for all, b for back)",
@@ -168,17 +185,19 @@ class Cocotb_Runner():
                                             return
                                         elif test_choice == 'b':
                                             break
+                                        # Build and run all tests
                                         elif test_choice == 'a':
-                                            print(f"Running all tests in {selected_test_file_name}...")
+                                            print(f"Running all tests in {selected_test_file_name_stripped}...")
                                             self.build(testbench_name)
-                                            self.run_tests(group=testbench_name, test_module=selected_test_file_name, selected_testcases=cocotb_tests, top_level=self.Source_Files[testbench_name][0][suite_choice])
+                                            self.run_tests(group=testbench_name, test_module=selected_test_file_name_stripped, selected_testcases=cocotb_tests, top_level=self.Source_Files[testbench_name][0][suite_choice])
                                             print(suite_choice)
                                             break
+                                        # Build and run singular test
                                         elif isinstance(test_choice, int):
                                             selected_test = str(cocotb_tests[test_choice])
                                             print(f"Running test: {selected_test}")
                                             self.build(testbench_name)
-                                            self.run_tests(group=testbench_name, test_module=selected_test_file_name, selected_testcases=[selected_test], top_level=self.Source_Files[testbench_name][0][suite_choice])
+                                            self.run_tests(group=testbench_name, test_module=selected_test_file_name_stripped, selected_testcases=[selected_test], top_level=self.Source_Files[testbench_name][0][suite_choice])
                                             break
                                         else:
                                             print("Invalid choice. Please enter a valid number.")
@@ -190,8 +209,6 @@ class Cocotb_Runner():
                         print(f"No test suites found in {test_files_dir}.")
                 else:
                     print(f"Testbench {testbench_path} does not exist. Make sure testbenches live in the same directory as this script and are titled 'testbench_<name>.")
-            else:
-                print("Invalid choice. Please enter a valid number.")
 
 if __name__ == "__main__":
     cocotb_runner = Cocotb_Runner()
