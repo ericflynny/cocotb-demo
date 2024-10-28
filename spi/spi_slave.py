@@ -2,9 +2,12 @@ import cocotb
 from cocotb.clock import Clock
 from cocotb.triggers import RisingEdge, FallingEdge, Timer
 
-class SPI_Testbench:
+
+# TODO: Write class, needs reset, send data, read data etc
+
+class Spi_Slave:
     def __init__(self, dut: cocotb.module.Module):
-        """Initialize the SPI testbench with a 10 ns clock.
+        """Initialize the SPI slave with a 10 ns clock.
         
         Args:
             dut (cocotb.module.Module): The DUT module.
