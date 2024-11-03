@@ -37,8 +37,7 @@ class SPI_Testbench:
         Returns:
             None
         """
-        self.reset()
-
+        await self.reset()
 
     async def reset(self):
         """Reset the DUT.

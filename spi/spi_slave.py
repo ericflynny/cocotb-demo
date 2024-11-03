@@ -2,7 +2,7 @@ import cocotb
 from cocotb.clock import Clock
 from cocotb.triggers import RisingEdge, FallingEdge, Timer, ClockCycles
 
-class SpiSlave:
+class Spi_Slave:
   def __init__(self, dut):
       """Setup SPI slave with design under test
       
@@ -15,13 +15,13 @@ class SpiSlave:
   async def reset(self):
       """Reset the SPI slave
       """
-      self.dut.rst.value = 1
-      await ClockCycles(self.dut.clk, 2)
-      self.dut.rst.value = 0
-      await RisingEdge(self.dut.clk)
-      self.dut.cs_n.value = 1
-      self.dut.sclk.value = 0
-      self.dut.mosi.value = 0
+      self.dut.slave_inst.rst.value = 1
+      await ClockCycles(self.dut.slave_inst.clk, 2)
+      self.dut.slave_inst.rst.value = 0
+      await RisingEdge(self.dut.slave_inst.clk)
+      self.dut.slave_inst.cs_n.value = 1
+      self.dut.slave_inst.sclk.value = 0
+      self.dut.slave_inst.mosi.value = 0
       
   async def write_data(self, data: int):
       """Write data to the SPI slave
@@ -30,36 +30,36 @@ class SpiSlave:
           data (int): 8-bit data to write to the slave
       """
       # Set up initial conditions
-      self.dut.cs_n.value = 1
-      self.dut.sclk.value = 0
-      await RisingEdge(self.dut.clk)
+      self.dut.slave_inst.cs_n.value = 1
+      self.dut.slave_inst.sclk.value = 0
+      await RisingEdge(self.dut.slave_inst.clk)
       
       # Load data to transmit
-      self.dut.data_in.value = data
+      self.dut.slave_inst.data_in.value = data
       
       # Start transaction
-      self.dut.cs_n.value = 0
-      await RisingEdge(self.dut.clk)
+      self.dut.slave_inst.cs_n.value = 0
+      await RisingEdge(self.dut.slave_inst.clk)
       
       # Transmit 8 bits
       for i in range(self.data_width):
           bit = (data >> (self.data_width - 1 - i)) & 0x1
           
           # Setup bit on MOSI
-          self.dut.mosi.value = bit
-          await RisingEdge(self.dut.clk)
+          self.dut.slave_inst.mosi.value = bit
+          await RisingEdge(self.dut.slave_inst.clk)
           
           # Rising edge of SCLK
-          self.dut.sclk.value = 1
-          await RisingEdge(self.dut.clk)
+          self.dut.slave_inst.sclk.value = 1
+          await RisingEdge(self.dut.slave_inst.clk)
           
           # Falling edge of SCLK
-          self.dut.sclk.value = 0
-          await RisingEdge(self.dut.clk)
+          self.dut.slave_inst.sclk.value = 0
+          await RisingEdge(self.dut.slave_inst.clk)
           
       # End transaction
-      await RisingEdge(self.dut.clk)
-      self.dut.cs_n.value = 1
+      await RisingEdge(self.dut.slave_inst.clk)
+      self.dut.slave_inst.cs_n.value = 1
       
   async def read_data(self) -> int:
       """Read data from the SPI slave
@@ -68,11 +68,11 @@ class SpiSlave:
           int: Received 8-bit data
       """
       # Wait for data_valid
-      while self.dut.data_valid.value == 0:
-          await RisingEdge(self.dut.clk)
+    #   while self.dut.slave_inst.data_valid.value == 0:
+    #       await RisingEdge(self.dut.slave_inst.clk)
           
       # Read the received data
-      data = int(self.dut.data_out.value)
+      data = self.dut.slave_inst.data_out.value
       return data
   
   async def transfer(self, write_data: int) -> int:
@@ -91,28 +91,6 @@ class SpiSlave:
       """Wait for the SPI slave to return to idle state
       """
       while True:
-          if self.dut.cs_n.value == 1:
+          if self.dut.slave_inst.cs_n.value == 1:
               break
-          await RisingEdge(self.dut.clk)
-
-# Example test function
-@cocotb.test()
-async def test_spi_slave(dut):
-  """Test SPI slave functionality"""
-  
-  # Create clock
-  clock = Clock(dut.clk, 10, units="ns")
-  cocotb.start_soon(clock.start())
-  
-  # Create SPI slave object
-  spi = SpiSlave(dut)
-  
-  # Reset
-  await spi.reset()
-  
-  # Test transfers
-  test_data = 0x5A
-  received_data = await spi.transfer(test_data)
-  
-  # Verify received data
-  assert received_data == test_data, f"Expected {test_data:02X}, got {received_data:02X}"
+          await RisingEdge(self.dut.slave_inst.clk)
