@@ -91,11 +91,9 @@ class Cocotb_Runner():
 
 
     def run_tests(self, group: str, test_module: str, selected_testcases: list[str], top_level: str):
-        testcase_string = " ".join(selected_testcases)
-
         try:
             self.ghdl.test(test_module=f"tests.{group}.test_{test_module}",
-                            testcase=testcase_string,
+                            testcase=selected_testcases,
                             hdl_toplevel=self.Source_Files[group][1],
                             waves=True,
                             gui=False,
@@ -189,7 +187,7 @@ class Cocotb_Runner():
                                         elif test_choice == 'a':
                                             print(f"Running all tests in {selected_test_file_name_stripped}...")
                                             self.build(testbench_name)
-                                            self.run_tests(group=testbench_name, test_module=selected_test_file_name_stripped, selected_testcases=cocotb_tests, top_level=self.Source_Files[testbench_name][0][suite_choice])
+                                            self.run_tests(group=testbench_name, test_module=selected_test_file_name_stripped, selected_testcases=None, top_level=self.Source_Files[testbench_name][0][suite_choice])
                                             print(suite_choice)
                                             break
                                         # Build and run singular test
