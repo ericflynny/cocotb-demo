@@ -21,10 +21,44 @@ class Spi_Master:
         self.dut = dut
 
     async def send_data(self, data: int):
-        """Prepare slave to send data back to master
+        """Send data one byte at a time with timeout
         
         Args:
-            data (int): The data to SPI slave from SPI master.
+            data (int): The data to send to SPI slave.
+            timeout (int, optional): Timeout in clock cycles. Defaults to 10.
+
+        Raises:
+            TimeoutError: If transmission takes longer than timeout.
+        
+        Returns:
+            int: The data received from the slave.
+        """
+
+        # First set the data
+        self.dut.master_inst.data_in.value = data
+        await RisingEdge(self.dut.clk)
+
+        # Then start transmission
+        self.dut.master_inst.start_tx.value = 1
+        await RisingEdge(self.dut.clk)
+        self.dut.master_inst.start_tx.value = 0
+
+        # Wait for transmission to complete (with timeout)
+        timeout = 100 # 60 clock cycles to complete transmission
+        for _ in range(timeout):
+            await RisingEdge(self.dut.clk)
+            if self.dut.master_inst.busy.value == 0:
+                for _ in range(timeout):
+                    await RisingEdge(self.dut.clk)
+                return self.dut.master_inst.data_out.value  # Transmission successful
+
+        raise TimeoutError("SPI Master Timeout: Data transmission took too long.")
+
+    async def read_data(self) -> int:
+        """ Read data
+
+        Args:
+            None
 
         Raises:
             None
@@ -32,22 +66,4 @@ class Spi_Master:
         Returns:
             None
         """
-        # Set master data
-        self.dut.master_data_in.value = data
-        
-        # Start transmission
-        await RisingEdge(self.dut.clk)
-        self.dut.start_tx.value = 1
-        await RisingEdge(self.dut.clk)
-        self.dut.start_tx.value = 0
-        
-        # Wait for transmission to complete
-        while True:
-            await RisingEdge(self.dut.clk)
-            if self.dut.master_busy.value == 0:
-                break
-                
-        # Get received data
-        received_data = self.dut.master_data_out.value
-        
-        return received_data
+        return self.dut.master_inst.data_in.value

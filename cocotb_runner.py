@@ -100,8 +100,8 @@ class Cocotb_Runner():
                             waves=True,
                             gui=False,
                             plusargs=[f"--wave={group}_wave.ghw"],
-                            build_dir=f"{group}_build",
-                            log_file=f"{group}_test.log"
+                            # log_file=f"{group}_test.log",
+                            build_dir=f"{group}_build"
                             )
         except Exception as e:
             print(f"Unable to run tests: {e}")

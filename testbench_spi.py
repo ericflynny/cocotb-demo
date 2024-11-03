@@ -64,5 +64,6 @@ class SPI_Testbench:
         for _ in range(2):
             await RisingEdge(self.dut.clk)
         self.dut.rst.value = 0
-        for _ in range(2):
+        for _ in range(5):
+            assert self.dut.slave_data_valid.value == 0, "slave_data_valid not low after reset" 
             await RisingEdge(self.dut.clk)
