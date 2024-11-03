@@ -98,6 +98,7 @@ class Cocotb_Runner():
                             waves=True,
                             gui=False,
                             plusargs=[f"--wave={group}_wave.ghw"],
+                            # Uncomment below line to redirect terminal test output to log file
                             # log_file=f"{group}_test.log",
                             build_dir=f"{group}_build"
                             )
