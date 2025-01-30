@@ -1,3 +1,4 @@
+import logging
 import cocotb
 from cocotb.handle import SimHandle
 from cocotb.clock import Clock
@@ -13,6 +14,8 @@ class SpiTestbench:
         Args:
             dut (cocotb.module.Module): The DUT module.
         """
+        # Logger setup
+        self.logger = logging.getLogger(__name__)
         # Design under test
         self.dut = dut
 
