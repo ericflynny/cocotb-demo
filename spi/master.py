@@ -7,7 +7,7 @@ class SpiMaster:
 
         Args:
             dut (cocotb.module.Module): The DUT module.
-            
+
         The DUT should have the following signals:
         - clk: System clock
         - rst: Reset signal
@@ -19,7 +19,7 @@ class SpiMaster:
         """
         self.dut = dut
         self.data_width = len(self.dut.master_data_in)
-        
+
         # Initialize default values
         self.dut.start_transfer.value = 0
         self.dut.master_data_in.value = 0
@@ -92,8 +92,8 @@ class SpiMaster:
         else:
             raise TimeoutError("Timeout waiting for transfer to complete")
 
-        # Wait one more clock cycle for data to stabilize
-        await RisingEdge(self.dut.clk)
+        # # Wait one more clock cycle for data to stabilize
+        # await RisingEdge(self.dut.clk)
 
         # Verify data valid flag
         if not self.dut.master_valid.value:

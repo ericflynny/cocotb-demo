@@ -42,7 +42,7 @@ class SpiSlave:
             count += 1
             if count < timeout:
                 await RisingEdge(self.dut.clk)
-                if self.dut.slave_data_valid.value == 1:
+                if self.dut.slave_valid.value == 1:
                     return self.dut.slave_data_out.value
             else:
                 raise TimeoutError("Slave timed out waiting for valid data")
