@@ -2,7 +2,7 @@ import os
 import cocotb.runner
 
 
-class Cocotb_Runner():
+class CocotbRunner():
     def __init__(self):
         self.ghdl = cocotb.runner.Ghdl()
         # Top level file must be first for build
@@ -88,11 +88,9 @@ class Cocotb_Runner():
                 print("Invalid input. Please enter a number.")
 
     def run_tests(self, group: str, test_module: str, selected_testcases: list[str]):
-        testcase_string = " ".join(selected_testcases)
-
         try:
             self.ghdl.test(test_module=f"tests.test_{test_module}",
-                           testcase=testcase_string,
+                           testcase=selected_testcases,
                            hdl_toplevel=self.Source_Files[group][1],
                            waves=True,
                            gui=False,
@@ -180,5 +178,5 @@ class Cocotb_Runner():
 
 
 if __name__ == "__main__":
-    cocotb_runner = Cocotb_Runner()
+    cocotb_runner = CocotbRunner()
     cocotb_runner.main()
