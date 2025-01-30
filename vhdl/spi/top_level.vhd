@@ -11,18 +11,18 @@ entity spi_top is
         -- System signals
         clk         : in  std_logic;
         rst         : in  std_logic;
-        
+
         -- Control signals
         start_transfer : in  std_logic;
         cpol          : in  std_logic;
         cpha          : in  std_logic;
-        
+
         -- Master data
         master_data_in  : in  std_logic_vector(DATA_WIDTH-1 downto 0);
         master_data_out : out std_logic_vector(DATA_WIDTH-1 downto 0);
         master_busy     : out std_logic;
         master_valid    : out std_logic;
-        
+
         -- Slave data
         slave_data_in   : in  std_logic_vector(DATA_WIDTH-1 downto 0);
         slave_data_out  : out std_logic_vector(DATA_WIDTH-1 downto 0);
@@ -36,7 +36,7 @@ architecture rtl of spi_top is
     signal mosi_int : std_logic;
     signal miso_int : std_logic;
     signal ss_n_int : std_logic;
-    
+
 begin
     -- Instantiate SPI Master
     master_inst : entity work.spi_master
@@ -59,7 +59,7 @@ begin
             miso => miso_int,
             ss_n => ss_n_int
         );
-    
+
     -- Instantiate SPI Slave
     slave_inst : entity work.spi_slave
         generic map (
@@ -78,5 +78,5 @@ begin
             miso => miso_int,
             ss_n => ss_n_int
         );
-    
+
 end architecture rtl;
