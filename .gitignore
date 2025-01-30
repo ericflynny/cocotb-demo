@@ -5,6 +5,7 @@ venv_cocotb/
 *.code-workspace
 
 # Build/Sim/Wave files
+build_*
 *.log
 *.cf
 *.xml
