@@ -1,8 +1,6 @@
 import os
 import cocotb.runner
 
-# TODO: Implement I2C
-
 
 class CocotbRunner():
     def __init__(self):
