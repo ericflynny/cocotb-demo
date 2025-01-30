@@ -1,12 +1,17 @@
 import os
 import cocotb.runner
 
+# TODO: Implement I2C
+
 
 class CocotbRunner():
     def __init__(self):
+        # Hardware simulator
         self.ghdl = cocotb.runner.Ghdl()
+
         # Top level file must be first for build
         cwd = os.getcwd()
+
         # Dictionary format -> Testbench name: (List of source files, Top level entity name)
         self.Source_Files = {
             # Testbench name

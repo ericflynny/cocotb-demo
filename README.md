@@ -1,6 +1,4 @@
-# This project is currently a work in progress (10.13.24). The cocotb tests and hdl have not been reviewed but the framework is functional
-
-
+# TODO: I2C
 ## Setting Up the python virtual environment
 In order to run the cocotb software, one must first configure the appropriate python virtual environment (venv). 
 
@@ -23,7 +21,7 @@ In order to run the cocotb software, one must first configure the appropriate py
 7. The venv is now active. To exit, either close the terminal or run `deactivate`. To re-activate, run `source venv_cocotb/bin/activate` from the directory of this README.
 
 
-## Setting up ghdl
+## Setting up ghdl (Hardware Simulator)
 - If on Windows, install executable from here: http://ghdl.free.fr/download.html
 - If on Mac (with homebrew installed), run `brew install ghdl`
 - If on Debian/Ubuntu, run `sudo apt-get install ghdl`
@@ -32,7 +30,7 @@ In order to run the cocotb software, one must first configure the appropriate py
 
 NOTE: Run `ghdl --version` to verify successfull installation
 
-# TODO: Add gtkwave install instructions
+# TODO: Add gtkwave install instructions and how to view files
 
 ## Running tests
 With the virtual environment active and Questa installed with a license setup, one can now run the software.
