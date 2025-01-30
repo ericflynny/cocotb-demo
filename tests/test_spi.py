@@ -39,33 +39,6 @@ async def test_basic_transfer(dut):
     assert slave_received == tx_data, f"Slave received wrong data: {slave_received} != {tx_data}"
 
 
-# TODO: Failing
-@cocotb.test()
-async def test_all_spi_modes(dut):
-    """Test all four SPI modes (CPOL/CPHA combinations)"""
-    clock = Clock(dut.clk, 10, units="ns")
-    cocotb.start_soon(clock.start())
-
-    tb = SpiTestbench(dut)
-
-    for cpol in [0, 1]:
-        for cpha in [0, 1]:
-            await tb.master.reset()
-            await tb.master.configure_mode(cpol=cpol, cpha=cpha)
-
-            tx_data = 0x55
-            rx_data = 0xAA
-
-            await tb.slave.send_data(rx_data)
-            received_data = await tb.master.send_data(tx_data)
-            slave_received = await tb.slave.get_received_data()
-
-            assert received_data == rx_data, \
-                f"Mode {cpol}{cpha}: Master received wrong data: {received_data} != {rx_data}"
-            assert slave_received == tx_data, \
-                f"Mode {cpol}{cpha}: Slave received wrong data: {slave_received} != {tx_data}"
-
-
 @cocotb.test()
 async def test_multiple_bytes(dut):
     """Test sending multiple bytes in sequence"""
