@@ -92,9 +92,6 @@ class SpiMaster:
         else:
             raise TimeoutError("Timeout waiting for transfer to complete")
 
-        # # Wait one more clock cycle for data to stabilize
-        # await RisingEdge(self.dut.clk)
-
         # Verify data valid flag
         if not self.dut.master_valid.value:
             raise ValueError("Transfer completed but master_valid not asserted")
